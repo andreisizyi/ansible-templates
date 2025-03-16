@@ -1,0 +1,43 @@
+---
+- name: User and group with ID from container alpine
+  hosts: localhost
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Ensure group container-alpine exists
+      group:
+        name: container-alpine
+        gid: 82
+        state: present
+
+    - name: Ensure user container-alpine exists
+      user:
+        name: container-alpine
+        uid: 82
+        group: container-alpine
+        create_home: no
+        state: present
+
+    - name: Get current user
+      command: whoami
+      register: current_user
+
+    - name: Add current user to group container-alpine
+      user:
+        name: "{{ current_user.stdout }}"
+        groups: container-alpine
+        append: yes
+
+    - name: Ensure correct group ownership for ./project
+      file:
+        path: ./project
+        state: directory
+        group: container-alpine
+
+    - name: Set GID bit (SetGID) for ./project
+      file:
+        path: ./project
+        state: directory
+        mode: "2775" # "g+s"
+        recurse: yes
